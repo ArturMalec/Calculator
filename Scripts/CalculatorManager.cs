@@ -23,7 +23,7 @@ public class CalculatorManager : MonoBehaviour
 
     private calcModes calculationMode;
     private CalcButton calcButton;
-    private string input;
+    private string sign;
     private double firstNumber;
     private double secondNumber;
     private bool isOperation = false;
@@ -40,20 +40,20 @@ public class CalculatorManager : MonoBehaviour
     public void GetInputAndPushToInputField(int id)
     {
         calcButton = _CalcButtons[id];
-        input = calcButton.Sign;
+        sign = calcButton.Sign;
 
         if (calcButton.InputAllowedButton)
         {
-            if ((_MainInput.text == 0.ToString() && input != ",") || isOperation)
+            if ((_MainInput.text == 0.ToString() && sign != ",") || isOperation)
             {
-                if (_MainInput.text != 0.ToString() && input == ",")
+                if (_MainInput.text != 0.ToString() && sign == ",")
                 {
-                    _MainInput.text = 0.ToString() + input;
+                    _MainInput.text = 0.ToString() + sign;
                     isCommaUsed = true;
                 }
                 else
                 {
-                    _MainInput.text = input;
+                    _MainInput.text = sign;
                 }
 
                 
@@ -61,14 +61,14 @@ public class CalculatorManager : MonoBehaviour
             }
             else
             {
-                if (input == "," && !isCommaUsed)
+                if (sign == "," && !isCommaUsed)
                 {
-                    _MainInput.text += input;
+                    _MainInput.text += sign;
                     isCommaUsed = true;
                 }
-                else if (input != ",")
+                else if (sign != ",")
                 {
-                    _MainInput.text += input;
+                    _MainInput.text += sign;
                 }
                
             }
@@ -95,16 +95,12 @@ public class CalculatorManager : MonoBehaviour
                 secondNumber = double.Parse(_MainInput.text);
                 double result = Calculations(firstNumber, secondNumber, calculationMode);
                 calculationMode = calcButton.CalcMode;
-                if (IsDivisionByZero(result))
-                {
-                    _MainInput.text = "0 division!";
-                    _CalculationsText.text = "";
-                }
-                else
+                if (!IsInfinityOrNaN(result))
                 {
                     _MainInput.text = result.ToString();
                     _CalculationsText.text = result.ToString() + " " + GetSign(calculationMode);
                 }
+
                 firstNumber = result;
             }          
         }
@@ -148,10 +144,8 @@ public class CalculatorManager : MonoBehaviour
             double num = double.Parse(_MainInput.text);
             double result = Calculations(double.Parse(_MainInput.text), secondNumber, calculationMode);
             _CalculationsText.text = num.ToString() + " " + GetSign(calculationMode) + " " + secondNumber.ToString() + " =";
-            if (IsDivisionByZero(result))
-                _MainInput.text = "0 division!";
-            else
-                _MainInput.text = result.ToString();
+            if (!IsInfinityOrNaN(result))
+                _MainInput.text = result.ToString(); 
         }
         else
         {
@@ -166,18 +160,13 @@ public class CalculatorManager : MonoBehaviour
             }
             else
             {
-                if (IsDivisionByZero(result))
-                {
-                    _MainInput.text = "0 division!";
-                    _CalculationsText.text = "";
-                }
-                else
+                if (!IsInfinityOrNaN(result))
                 {
                     _MainInput.text = result.ToString();
                     if (!isPercentUsed && !isTrimmingBlocked)
                         _CalculationsText.text += " " + secondNumber.ToString() + " =";
                     else
-                        _CalculationsText.text +=  " =";
+                        _CalculationsText.text += " =";
                 }
                 
                 isAfterEquation = true;
@@ -282,11 +271,7 @@ public class CalculatorManager : MonoBehaviour
         double num = double.Parse(_MainInput.text);
         double finalNumber = 1 / double.Parse(_MainInput.text);
 
-        if (IsDivisionByZero(finalNumber))
-        {
-            _MainInput.text = "0 division!";
-        }
-        else
+        if (!IsInfinityOrNaN(finalNumber))
         {
             _MainInput.text = finalNumber.ToString();
 
@@ -295,7 +280,7 @@ public class CalculatorManager : MonoBehaviour
             else
                 _CalculationsText.text += " 1/(" + num.ToString() + ")";
         }
-
+  
         isTrimmingBlocked = true;
         isSpecialOperationUsed = true;
     }
@@ -345,14 +330,33 @@ public class CalculatorManager : MonoBehaviour
         }
     }
 
-    private bool IsDivisionByZero(double result)
+    public void QuitApplication()
     {
-        if (double.IsInfinity(result))
+        Application.Quit();
+    }
+
+    /// <summary>
+    /// Checks division by 0 and NaN
+    /// </summary>
+    /// <param name="result"></param>
+    /// <returns></returns>
+    private bool IsInfinityOrNaN(double result)
+    {
+        if (double.IsInfinity(result) || double.IsNegativeInfinity(result))
         {
+            _MainInput.text = "0 division!";
+            _CalculationsText.text = "";
             BlockButtonsAfterFalseDivision(true);
             return true;
         }
-        
+        else if (double.IsNaN(result))
+        {
+            _MainInput.text = "NaN";
+            _CalculationsText.text = "";
+            BlockButtonsAfterFalseDivision(true);
+            return true;
+        }
+
         return false;
     }
 
@@ -405,10 +409,4 @@ public class CalculatorManager : MonoBehaviour
                 return "e";
         }
     }
-
-
-
-
-
-
 }
